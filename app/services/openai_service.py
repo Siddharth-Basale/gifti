@@ -30,19 +30,24 @@ def generate_description_and_tag(
     giftcard_name: str,
     prompt: str,
     tier: Tier,
-) -> dict[str, str]:
-    """Return {"description": str, "tag": str}."""
+) -> dict:
+    """Return descriptions (medium x2, short x2), tags (~10), and 5 refactored gift card name suggestions."""
     model = TIER1_CHAT_MODEL if tier == "tier1" else TIER2_CHAT_MODEL
     system = (
-        "You are a gift card copywriter. You produce copy for digital wallet gift cards "
-        "(Google Wallet / Apple Wallet): one short description and one small tag.\n\n"
-        "Context and rules:\n"
-        "- Business domain and intent come from the customer's prompt.\n"
-        "- Infer the promotion type from the prompt when possible Make the description and tag fit that type.\n"
-        "- Description should be 4-5 sentences, based on the prompt and gift card name.\n"
-        "- Tag must be 1–3 words.\n\n"
-        "Reply ONLY with valid JSON in exactly this shape: "
-        "{\"description\":\"...\",\"tag\":\"...\"}"
+        "You are a gift card copywriter for digital wallet gift cards .\n\n"
+        "Given a gift card name and a customer prompt, you must return ALL of the following in one JSON object:\n\n"
+        "1. descriptions_medium: array of exactly 2 different medium-length descriptions (4-5 sentences each). "
+        "Both should be based on the prompt and gift card name; vary tone or angle slightly.\n"
+        "2. descriptions_short: array of exactly 2 different short descriptions (1 sentence each). "
+        "Same theme, more concise.\n"
+        "3. tags: array of about 10 tags. Each tag is 1-3 words. Mix promotion type, occasion, and vibe.\n"
+        "4. giftcard_name_suggestions: array of exactly 5 refactored/improved versions of the gift card name. "
+        "Keep the intent but make them clearer, catchier, or more professional.\n\n"
+        "Context: Infer business domain and promotion type (birthday, festival, sale, thank-you, etc.) from the prompt. "
+        "Make all copy fit that type.\n\n"
+        "Reply ONLY with valid JSON in exactly this shape (no other keys):\n"
+        "{\"descriptions_medium\":[\"...\",\"...\"],\"descriptions_short\":[\"...\",\"...\"],"
+        "\"tags\":[\"...\",\"...\",...],\"giftcard_name_suggestions\":[\"...\",\"...\",\"...\",\"...\",\"...\"]}"
     )
     user = f"Gift card name: {giftcard_name}\nPrompt: {prompt}"
     response = client.chat.completions.create(
@@ -55,9 +60,12 @@ def generate_description_and_tag(
     )
     raw = response.choices[0].message.content
     data = json.loads(raw)
-    description = data.get("description", "").strip()
-    tag = data.get("tag", "").strip()
-    return {"description": description, "tag": tag}
+    return {
+        "descriptions_medium": [s.strip() for s in data.get("descriptions_medium", [])][:2],
+        "descriptions_short": [s.strip() for s in data.get("descriptions_short", [])][:2],
+        "tags": [s.strip() for s in data.get("tags", [])][:12],
+        "giftcard_name_suggestions": [s.strip() for s in data.get("giftcard_name_suggestions", [])][:5],
+    }
 
 
 def generate_image(

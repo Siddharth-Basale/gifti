@@ -18,8 +18,10 @@ class DescribeRequest(BaseModel):
 
 
 class DescribeResponse(BaseModel):
-    description: str
-    tag: str
+    descriptions_medium: list[str]  # 2 choices
+    descriptions_short: list[str]   # 2 choices
+    tags: list[str]                 # ~10 tags
+    giftcard_name_suggestions: list[str]  # 5 refactored names
 
 
 class ImageRequest(BaseModel):
@@ -51,7 +53,12 @@ def tier1_describe(
         result = generate_description_and_tag(
             client, body.giftcard_name, body.prompt, "tier1"
         )
-        return DescribeResponse(**result)
+        return DescribeResponse(
+            descriptions_medium=result["descriptions_medium"],
+            descriptions_short=result["descriptions_short"],
+            tags=result["tags"],
+            giftcard_name_suggestions=result["giftcard_name_suggestions"],
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -79,7 +86,12 @@ def tier2_describe(
         result = generate_description_and_tag(
             client, body.giftcard_name, body.prompt, "tier2"
         )
-        return DescribeResponse(**result)
+        return DescribeResponse(
+            descriptions_medium=result["descriptions_medium"],
+            descriptions_short=result["descriptions_short"],
+            tags=result["tags"],
+            giftcard_name_suggestions=result["giftcard_name_suggestions"],
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
